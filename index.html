@@ -194,11 +194,43 @@
 
             <!-- LEDGERS -->
             <section id="sectionUdhar" class="hidden space-y-4 col-span-1 md:col-span-2">
-                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-blue-500"><h2 class="text-lg font-bold text-slate-800 mb-4">Udhar Ledger</h2><div class="overflow-x-auto"><table class="w-full text-left text-xs border-collapse"><tbody id="udharListBody"></tbody></table></div></div>
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-blue-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Udhar Ledger</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-blue-50 border-b border-blue-200">
+                                <tr>
+                                    <th class="p-2">Date</th>
+                                    <th class="p-2">Customer & Ref</th>
+                                    <th class="p-2 text-right">Balance</th>
+                                    <th class="p-2">Last Remark</th>
+                                </tr>
+                            </thead>
+                            <tbody id="udharListBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
+            
             <section id="sectionAdvance" class="hidden space-y-4 col-span-1 md:col-span-2">
-                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-green-500"><h2 class="text-lg font-bold text-slate-800 mb-4">Advance Ledger</h2><div class="overflow-x-auto"><table class="w-full text-left text-xs border-collapse"><tbody id="advanceListBody"></tbody></table></div>
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-green-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Advance Ledger</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-green-50 border-b border-green-200">
+                                <tr>
+                                    <th class="p-2">Date</th>
+                                    <th class="p-2">Customer & Ref</th>
+                                    <th class="p-2 text-right">Balance</th>
+                                    <th class="p-2">Last Remark</th>
+                                </tr>
+                            </thead>
+                            <tbody id="advanceListBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
+            
             <section id="sectionCashBook" class="hidden space-y-4 col-span-1 md:col-span-2">
                 <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-orange-500">
                     <h2 class="text-lg font-bold text-slate-800 mb-4">Cash Book</h2>
@@ -257,13 +289,11 @@
         }
 
         function renderLists(){
-            document.getElementById('udharListBody').innerHTML=udharData.map(i=>`<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2"><b>${i.particular}</b><br><span class="text-[10px] text-slate-500">${i.challan}</span></td><td class="text-right text-rose-600 font-bold">₹${i.balance}</td></tr>`).join('')||'<tr><td class="p-4 text-center">No Data</td></tr>';
-            document.getElementById('advanceListBody').innerHTML=advanceData.map(i=>`<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2"><b>${i.particular}</b><br><span class="text-[10px] text-slate-500">${i.challan}</span></td><td class="text-right text-green-600 font-bold">₹${i.balance}</td></tr>`).join('')||'<tr><td class="p-4 text-center">No Data</td></tr>';
+            document.getElementById('udharListBody').innerHTML=udharData.map(i=>`<tr class="border-b hover:bg-slate-50"><td class="p-2 whitespace-nowrap text-xs text-slate-500">${i.firstDate||'-'}</td><td class="py-2 px-2"><b>${i.particular}</b><br><span class="text-[10px] text-slate-500">${i.challan}</span></td><td class="text-right text-rose-600 font-bold">₹${i.balance}</td><td class="p-2 text-xs italic text-slate-500 whitespace-normal max-w-[150px] break-words">${i.lastRemark||'-'}</td></tr>`).join('')||'<tr><td class="p-4 text-center">No Data</td></tr>';
             
-            // Fixed Cashbook Alignment
-            document.getElementById('cashBookBody').innerHTML=cashData.map(i=>`<tr class="border-b"><td class="p-2">${i.date}</td><td class="p-2 text-right text-slate-500">${i.opening}</td><td class="p-2 text-right text-green-600">${i.cashIn}</td><td class="p-2 text-right text-rose-600">${i.cashOut}</td><td class="p-2 text-right font-bold">${i.closing}</td></tr>`).join('');
+            document.getElementById('advanceListBody').innerHTML=advanceData.map(i=>`<tr class="border-b hover:bg-slate-50"><td class="p-2 whitespace-nowrap text-xs text-slate-500">${i.firstDate||'-'}</td><td class="py-2 px-2"><b>${i.particular}</b><br><span class="text-[10px] text-slate-500">${i.challan}</span></td><td class="text-right text-green-600 font-bold">₹${i.balance}</td><td class="p-2 text-xs italic text-slate-500 whitespace-normal max-w-[150px] break-words">${i.lastRemark||'-'}</td></tr>`).join('')||'<tr><td class="p-4 text-center">No Data</td></tr>';
             
-            // Fixed Today Transactions (Added Remarks & Wrap)
+            document.getElementById('cashBookBody').innerHTML=cashData.map(i=>`<tr class="border-b"><td class="p-2">${i.date}</td><td class="text-right text-slate-500">${i.opening}</td><td class="text-right text-green-600">${i.cashIn}</td><td class="text-right text-rose-600">${i.cashOut}</td><td class="text-right font-bold">${i.closing}</td></tr>`).join('');
             document.getElementById('todayListBody').innerHTML=todayData.map(i=>`<tr class="border-b hover:bg-indigo-50"><td class="p-2"><span class="px-2 py-1 text-[10px] rounded-full ${i.type==='Received'?'bg-green-100 text-green-800':'bg-rose-100 text-rose-800'}">${i.type}</span></td><td class="p-2 font-medium">${i.particular}</td><td class="p-2 text-xs">${i.ref||'-'}</td><td class="p-2 text-right text-green-600">${i.cash||'-'}</td><td class="p-2 text-right text-blue-600">${i.bank||'-'}</td><td class="p-2 text-right text-sky-500">${i.paytm||'-'}</td><td class="p-2 text-right text-rose-500">${i.udhar||'-'}</td><td class="p-2 text-right text-amber-500">${i.advance||'-'}</td><td class="p-2 text-xs italic text-slate-500 whitespace-normal max-w-[150px] break-words">${i.remark||'-'}</td></tr>`).join('');
             
             const uSelect=document.getElementById('pendingCustomerList');
@@ -278,7 +308,6 @@
             document.getElementById('pendingUdharContainer').classList.add('hidden');
             document.getElementById('advanceListContainer').classList.add('hidden');
             
-            // Allow editing of name/challan by default
             const n=document.getElementById('receivedParticular'); n.value=''; n.readOnly=false; n.classList.remove('bg-gray-100');
             const c=document.getElementById('challanNo'); c.value=''; c.readOnly=false; c.classList.remove('bg-gray-100');
             document.getElementById('receivedRemarks').value='';
@@ -304,7 +333,6 @@
                 document.getElementById('receivedParticular').value=opt.value;
                 document.getElementById('challanNo').value=opt.dataset.challan; // Can be edited
                 document.getElementById('advAdjustInput').value=opt.dataset.balance;
-                // THIS IS THE FIX: Adding a hidden LINK tag
                 document.getElementById('receivedRemarks').value=`Adjusted from Advance {LINK:${opt.value}|${opt.dataset.challan}}`;
                 document.getElementById('advBalanceNote').innerText=`Available: ₹${opt.dataset.balance}`;
             }
@@ -317,6 +345,22 @@
             const fd=new FormData(e.target); const data=Object.fromEntries(fd.entries());
             data.timestamp=new Date().toLocaleString();
             if(isRec && !data.refNo) data.refNo = data.challanNo;
+
+            // Auto-append amount & date to remarks for tracking history in the remark field itself
+            if (isRec) {
+                const cat = data.category;
+                const dateStr = new Date().toLocaleDateString('en-IN'); // Indian format
+                
+                if (cat === 'Customer Pending') {
+                    const totalPaid = (Number(data.cashReceived) || 0) + (Number(data.bankReceived) || 0) + (Number(data.paytm) || 0);
+                    if (totalPaid > 0) {
+                        data.remarks += ` | Rec: ₹${totalPaid} on ${dateStr}`;
+                    }
+                } else if (cat === 'Customer' && (Number(data.advanceAdjusted) || 0) > 0) {
+                    data.remarks += ` | Adj: ₹${data.advanceAdjusted} on ${dateStr}`;
+                }
+            }
+
             try{
                 await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(data)});
                 alert("Saved!"); e.target.reset(); if(isRec)handleCategoryChange('Customer'); fetchAllData();
