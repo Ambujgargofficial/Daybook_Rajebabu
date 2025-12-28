@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Tracker + Cash Book</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="fas fa-wallet text-blue-600"></i> Finance Tracker
+            </h1>
+            <button onclick="fetchAllData()" class="text-blue-600 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-all focus:outline-none">
+                <i class="fas fa-sync" id="syncIcon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b sticky top-[61px] z-40 overflow-x-auto">
+        <div class="flex text-center min-w-max md:min-w-0">
+            <button onclick="switchTab('received')" id="tabBtnReceived" class="flex-1 px-4 py-3 text-sm font-semibold transition-all tab-active">Received</button>
+            <button onclick="switchTab('expense')" id="tabBtnExpense" class="flex-1 px-4 py-3 text-sm font-semibold transition-all text-slate-500">Expense</button>
+            <button onclick="switchTab('summary')" id="tabBtnSummary" class="flex-1 px-4 py-3 text-sm font-semibold transition-all text-slate-500">Ledgers</button>
+            <button onclick="switchTab('cashbook')" id="tabBtnCashBook" class="flex-1 px-4 py-3 text-sm font-semibold transition-all text-slate-500">Cash Book</button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 mt-6">
+        <div id="contentGrid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- SECTION: RECEIVED -->
+            <section id="sectionReceived" class="space-y-4">
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-emerald-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Payment Received</h2>
+                    <form id="formReceived" class="space-y-4">
+                        <input type="hidden" name="sheetName" value="Received">
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                                <select name="category" id="receivedCategory" onchange="handleCategoryChange(this.value)" class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none bg-white">
+                                    <option value="Customer">Customer</option>
+                                    <option value="Insurance">Insurance</option>
+                                    <option value="Other">Other</option>
+                                    <option value="Customer Advance">Customer Advance</option>
+                                    <option value="Customer Pending">Customer Pending</option>
+                                </select>
+                            </div>
+
+                            <div id="advanceListContainer" class="hidden bg-green-50 p-3 rounded-lg border border-green-200">
+                                <label class="block text-sm font-bold text-green-700 mb-1 tracking-tight italic">Adjust Advance</label>
+                                <select id="advanceCustomerList" onchange="autoFillFromAdvance(this)" class="w-full px-4 py-2 rounded-lg border border-green-300 outline-none bg-white font-medium">
+                                    <option value="">-- Select Record --</option>
+                                </select>
+                                <div id="advBalanceNote" class="text-[10px] mt-1 text-green-600 font-bold uppercase"></div>
+                            </div>
+
+                            <div id="pendingUdharContainer" class="hidden bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                <label class="block text-sm font-bold text-blue-700 mb-1 tracking-tight italic">Settle Udhar</label>
+                                <select id="pendingCustomerList" onchange="autoFillFromUdhar(this)" class="w-full px-4 py-2 rounded-lg border border-blue-300 outline-none bg-white font-medium">
+                                    <option value="">-- Select Record --</option>
+                                </select>
+                                <div id="udharBalanceNote" class="text-[10px] mt-1 text-blue-600 font-bold uppercase"></div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Name <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="receivedParticular" name="particular" required class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter Name">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Challan / Reg No. <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="challanNo" name="challanNo" required class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Number / Reg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Cash</label>
+                                <input type="number" name="cashReceived" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none shadow-sm" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Bank</label>
+                                <input type="number" name="bankReceived" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none shadow-sm" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Paytm</label>
+                                <input type="number" name="paytm" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none shadow-sm" placeholder="0">
+                            </div>
+                            <div id="udharGivenBox">
+                                <label class="block text-xs font-bold text-rose-600 mb-1 uppercase tracking-wider">Udhar Given</label>
+                                <input type="number" id="udharInput" name="udharPayment" class="w-full px-3 py-2 rounded-lg border border-rose-200 outline-none bg-rose-50/30" placeholder="0">
+                            </div>
+                            <div id="advanceAdjustBox" class="hidden">
+                                <label class="block text-xs font-bold text-green-600 mb-1 uppercase tracking-wider">Adv. Adjusted</label>
+                                <input type="number" id="advAdjustInput" name="advanceAdjusted" class="w-full px-3 py-2 rounded-lg border border-green-200 outline-none bg-green-50/30" placeholder="0">
+                            </div>
+                        </div>
+
+                        <textarea name="remarks" id="receivedRemarks" rows="2" class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none" placeholder="Remarks..."></textarea>
+
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex justify-center items-center gap-2">
+                            <span>Save Entry</span>
+                            <div class="hidden" id="loadingRec"><div class="loading-spinner border-t-white"></div></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECTION: EXPENSE -->
+            <section id="sectionExpense" class="space-y-4">
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-rose-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Expense Section</h2>
+                    <form id="formExpense" class="space-y-4">
+                        <input type="hidden" name="sheetName" value="Expenses">
+                        <select name="category" required class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none bg-white">
+                            <option value="Bank Deposit">Bank Deposit</option>
+                            <option value="Office Expenses">Office Expenses</option>
+                            <option value="Repair Expenses">Repair Expenses</option>
+                            <option value="Staff Advance">Staff Advance</option>
+                            <option value="Customer">Customer</option>
+                            <option value="Staff Refreshment">Staff Refreshment</option>
+                            <option value="OutDoor Expense">OutDoor Expense</option>
+                            <option value="Rent Expense">Rent Expense</option>
+                            <option value="Travelling Expense">Travelling Expense</option>
+                            <option value="Misc Advance">Misc Advance</option>
+                            <option value="RTO Expense">RTO Expense</option>
+                            <option value="Misc Expenses">Misc Expenses</option>
+                            <option value="Salary and Incentive Expenses">Salary and Incentive Expenses</option>
+                            <option value="Purchase Other">Purchase Other</option>
+                            <option value="Freight Expense">Freight Expense</option>
+                            <option value="Advertisement Exp">Advertisement Exp</option>
+                            <option value="Stationary Expense">Stationary Expense</option>
+                            <option value="Telephone & Internet Exp">Telephone & Internet Exp</option>
+                            <option value="Courier Expense">Courier Expense</option>
+                            <option value="Advance From Customer">Advance From Customer</option>
+                            <option value="Electricity Expense">Electricity Expense</option>
+                            <option value="Customer Welfare Expenses">Customer Welfare Expenses</option>
+                            <option value="Staff Welfare Expenses">Staff Welfare Expenses</option>
+                            <option value="Insurance Expenses">Insurance Expenses</option>
+                            <option value="Fright Non-gst">Fright Non-gst</option>
+                            <option value="Pitty Cash A/C Deposit">Pitty Cash A/C Deposit</option>
+                        </select>
+                        <input type="text" name="particular" required class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none" placeholder="Description">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="number" name="amount" required class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none" placeholder="Amount">
+                            <input type="text" name="formHead" class="w-full px-4 py-2 rounded-lg border border-slate-200 outline-none" placeholder="In-charge Name">
+                        </div>
+                        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2">
+                            <span>Save Expense</span>
+                            <div class="hidden" id="loadingExp"><div class="loading-spinner border-t-white"></div></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SECTION: SUMMARIES -->
+            <section id="sectionSummary" class="hidden space-y-8 col-span-1 md:col-span-2">
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-blue-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Pending Udhar Ledger</h2>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs"><tbody id="udharListBody"></tbody></table></div>
+                </div>
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-green-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Available Advances Ledger</h2>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs"><tbody id="advanceListBody"></tbody></table></div>
+                </div>
+            </section>
+
+            <!-- SECTION: CASH BOOK -->
+            <section id="sectionCashBook" class="hidden space-y-4 col-span-1 md:col-span-2">
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-orange-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Cash In Hand Report</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm border-collapse">
+                            <thead class="bg-orange-50 text-orange-900 border-b border-orange-200">
+                                <tr>
+                                    <th class="py-3 px-2">Date</th>
+                                    <th class="py-3 px-2 text-right">Opening</th>
+                                    <th class="py-3 px-2 text-right text-green-600">Cash In (+)</th>
+                                    <th class="py-3 px-2 text-right text-rose-600">Cash Out (-)</th>
+                                    <th class="py-3 px-2 text-right font-bold">Closing</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cashBookBody">
+                                <!-- Dynamic Data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMWH-cpfw94dnQdP9zTWRN_5gKapcOtNo1vVqmi4_PLxpvx6aodNmjY7ZXyInAt0ISuQ/exec';
+        let udharData = [], advanceData = [], cashData = [];
+
+        function switchTab(type) {
+            const sections = ['sectionReceived', 'sectionExpense', 'sectionSummary', 'sectionCashBook'];
+            const btns = ['tabBtnReceived', 'tabBtnExpense', 'tabBtnSummary', 'tabBtnCashBook'];
+            
+            sections.forEach(s => document.getElementById(s).classList.add('hidden'));
+            btns.forEach(b => {
+                document.getElementById(b).classList.remove('tab-active');
+                document.getElementById(b).classList.add('text-slate-500');
+            });
+
+            if(type === 'received') {
+                document.getElementById('sectionReceived').classList.remove('hidden');
+                document.getElementById('tabBtnReceived').classList.add('tab-active');
+            } else if(type === 'expense') {
+                document.getElementById('sectionExpense').classList.remove('hidden');
+                document.getElementById('tabBtnExpense').classList.add('tab-active');
+            } else if(type === 'summary') {
+                document.getElementById('sectionSummary').classList.remove('hidden');
+                document.getElementById('tabBtnSummary').classList.add('tab-active');
+                fetchAllData();
+            } else if(type === 'cashbook') {
+                document.getElementById('sectionCashBook').classList.remove('hidden');
+                document.getElementById('tabBtnCashBook').classList.add('tab-active');
+                fetchAllData();
+            }
+        }
+
+        async function fetchAllData() {
+            const syncIcon = document.getElementById('syncIcon');
+            syncIcon.classList.add('fa-spin');
+            try {
+                const [uRes, aRes, cRes] = await Promise.all([
+                    fetch(`${SCRIPT_URL}?action=getUdharList&t=${Date.now()}`),
+                    fetch(`${SCRIPT_URL}?action=getAdvanceList&t=${Date.now()}`),
+                    fetch(`${SCRIPT_URL}?action=getCashReport&t=${Date.now()}`)
+                ]);
+                udharData = await uRes.json();
+                advanceData = await aRes.json();
+                cashData = await cRes.json();
+                renderLists();
+                renderCashBook();
+            } catch (e) { console.error(e); }
+            syncIcon.classList.remove('fa-spin');
+        }
+
+        function renderLists() {
+            // Render Udhar and Advance as before
+            const uBody = document.getElementById('udharListBody');
+            const aBody = document.getElementById('advanceListBody');
+            
+            uBody.innerHTML = udharData.map(i => `<tr class="border-b hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-2"><b>${i.particular}</b><br><span class="text-[10px] text-slate-500">Ref: ${i.challan}</span></td>
+                <td class="py-3 px-2 text-right font-bold text-rose-600">₹${i.balance.toLocaleString()}</td>
+                <td class="py-3 px-2 text-[9px] text-slate-400 italic">${i.history || '-'}</td>
+            </tr>`).join('') || '<tr><td colspan="3" class="py-4 text-center">No Pending Udhar</td></tr>';
+
+            aBody.innerHTML = advanceData.map(i => `<tr class="border-b hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-2"><b>${i.particular}</b><br><span class="text-[10px] text-slate-500">Ref: ${i.challan}</span></td>
+                <td class="py-3 px-2 text-right font-bold text-green-600">₹${i.balance.toLocaleString()}</td>
+                <td class="py-3 px-2 text-[9px] text-slate-400 italic">${i.history || '-'}</td>
+            </tr>`).join('') || '<tr><td colspan="3" class="py-4 text-center">No Advance Found</td></tr>';
+            
+            updateDropdowns();
+        }
+
+        function renderCashBook() {
+            const tbody = document.getElementById('cashBookBody');
+            tbody.innerHTML = cashData.map(d => `
+                <tr class="border-b border-orange-100 hover:bg-orange-50/50">
+                    <td class="py-3 px-2 font-medium">${d.date}</td>
+                    <td class="py-3 px-2 text-right text-slate-500">₹${d.opening.toLocaleString()}</td>
+                    <td class="py-3 px-2 text-right text-green-600 font-bold">+₹${d.cashIn.toLocaleString()}</td>
+                    <td class="py-3 px-2 text-right text-rose-600 font-bold">-₹${d.cashOut.toLocaleString()}</td>
+                    <td class="py-3 px-2 text-right font-bold text-slate-800 bg-orange-50/30">₹${d.closing.toLocaleString()}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" class="py-4 text-center text-slate-400">No Cash History</td></tr>';
+        }
+
+        function updateDropdowns() {
+            const uSelect = document.getElementById('pendingCustomerList');
+            const aSelect = document.getElementById('advanceCustomerList');
+            
+            uSelect.innerHTML = '<option value="">-- Choose Record --</option>' + 
+                udharData.map(i => `<option value="${i.particular}" data-challan="${i.challan}" data-balance="${i.balance}">${i.particular} (${i.challan} | ₹${i.balance})</option>`).join('');
+            
+            aSelect.innerHTML = '<option value="">-- Choose Advance --</option>' + 
+                advanceData.map(i => `<option value="${i.particular}" data-challan="${i.challan}" data-balance="${i.balance}">${i.particular} (${i.challan} | ₹${i.balance})</option>`).join('');
+        }
+
+        function handleCategoryChange(val) {
+            const uBox = document.getElementById('udharGivenBox');
+            const aBox = document.getElementById('advanceAdjustBox');
+            const uCont = document.getElementById('pendingUdharContainer');
+            const aCont = document.getElementById('advanceListContainer');
+
+            // Reset
+            document.getElementById('receivedParticular').value = "";
+            document.getElementById('challanNo').value = "";
+            document.getElementById('receivedRemarks').value = "";
+            document.getElementById('udharInput').value = "";
+            document.getElementById('advAdjustInput').value = "";
+            document.getElementById('pendingCustomerList').selectedIndex = 0;
+            document.getElementById('advanceCustomerList').selectedIndex = 0;
+            document.getElementById('advBalanceNote').innerText = "";
+            document.getElementById('udharBalanceNote').innerText = "";
+
+            uBox.classList.remove('hidden'); aBox.classList.add('hidden'); uCont.classList.add('hidden'); aCont.classList.add('hidden');
+
+            if (val === 'Customer Advance') { uBox.classList.add('hidden'); } 
+            else if (val === 'Customer Pending') { uCont.classList.remove('hidden'); uBox.classList.add('hidden'); } 
+            else if (val === 'Customer') { aBox.classList.remove('hidden'); aCont.classList.remove('hidden'); }
+        }
+
+        function autoFillFromUdhar(sel) {
+            const opt = sel.options[sel.selectedIndex];
+            if (opt.value) {
+                document.getElementById('receivedParticular').value = opt.value;
+                document.getElementById('challanNo').value = opt.dataset.challan;
+                document.getElementById('receivedRemarks').value = "Settlement for " + opt.value + " (" + opt.dataset.challan + ")";
+                document.getElementById('udharBalanceNote').innerText = "Pending: ₹" + opt.dataset.balance;
+            }
+        }
+
+        function autoFillFromAdvance(sel) {
+            const opt = sel.options[sel.selectedIndex];
+            if (opt.value) {
+                document.getElementById('receivedParticular').value = opt.value;
+                document.getElementById('challanNo').value = opt.dataset.challan;
+                document.getElementById('advAdjustInput').value = opt.dataset.balance;
+                document.getElementById('receivedRemarks').value = "Adjusted from Advance for " + opt.value + " (" + opt.dataset.challan + ")";
+                document.getElementById('advBalanceNote').innerText = "Available: ₹" + opt.dataset.balance;
+            }
+        }
+
+        async function submitForm(e, isReceived) {
+            e.preventDefault();
+            const loader = document.getElementById(isReceived ? 'loadingRec' : 'loadingExp');
+            loader.classList.remove('hidden');
+            const data = Object.fromEntries(new FormData(e.target).entries());
+            data.timestamp = new Date().toLocaleString();
+            if (isReceived && !data.refNo) data.refNo = data.challanNo;
+
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+                alert("Saved!"); 
+                e.target.reset(); 
+                if(isReceived) handleCategoryChange('Customer'); 
+                fetchAllData();
+            } catch (e) { alert("Error"); }
+            loader.classList.add('hidden');
+        }
+
+        document.getElementById('formReceived').onsubmit = (e) => submitForm(e, true);
+        document.getElementById('formExpense').onsubmit = (e) => submitForm(e, false);
+
+        window.onload = () => { fetchAllData(); if (window.innerWidth >= 768) document.getElementById('sectionSummary').classList.remove('hidden'); };
+    </script>
+</body>
+</html>
