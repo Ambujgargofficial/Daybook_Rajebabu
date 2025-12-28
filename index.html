@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Tracker + Separate Ledgers</title>
+    <title>Finance Tracker + Today View</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -13,9 +13,10 @@
         .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
         .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Smooth transition for tabs */
         button { transition: all 0.2s ease-in-out; }
+        
+        /* Compact table styling */
+        th, td { white-space: nowrap; }
     </style>
 </head>
 <body class="min-h-screen pb-12">
@@ -24,7 +25,7 @@
     <header class="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <i class="fas fa-wallet text-blue-600"></i> Finance Tracker
+                <i class="fas fa-wallet text-blue-600"></i> Rajebabu Daybook Showrom
             </h1>
             <button onclick="fetchAllData()" class="text-blue-600 bg-blue-50 p-2 rounded-full hover:bg-blue-100 transition-all focus:outline-none" title="Refresh Data">
                 <i class="fas fa-sync" id="syncIcon"></i>
@@ -32,13 +33,14 @@
         </div>
     </header>
 
-    <!-- Navigation Tabs (Separated Ledgers) -->
+    <!-- Navigation Tabs -->
     <nav class="bg-white border-b sticky top-[61px] z-40 overflow-x-auto">
         <div class="flex text-center min-w-max md:min-w-0">
             <button onclick="switchTab('received')" id="tabBtnReceived" class="px-4 py-3 text-sm font-semibold text-slate-500 whitespace-nowrap tab-active">Received</button>
             <button onclick="switchTab('expense')" id="tabBtnExpense" class="px-4 py-3 text-sm font-semibold text-slate-500 whitespace-nowrap">Expense</button>
+            <button onclick="switchTab('today')" id="tabBtnToday" class="px-4 py-3 text-sm font-semibold text-slate-500 whitespace-nowrap"><i class="fas fa-calendar-day mr-1"></i> Today</button>
             <button onclick="switchTab('udhar')" id="tabBtnUdhar" class="px-4 py-3 text-sm font-semibold text-slate-500 whitespace-nowrap">Udhar Ledger</button>
-            <button onclick="switchTab('advance')" id="tabBtnAdvance" class="px-4 py-3 text-sm font-semibold text-slate-500 whitespace-nowrap">Cus Advance Ledger</button>
+            <button onclick="switchTab('advance')" id="tabBtnAdvance" class="px-4 py-3 text-sm font-semibold text-slate-500 whitespace-nowrap">Advance Ledger</button>
             <button onclick="switchTab('cashbook')" id="tabBtnCashBook" class="px-4 py-3 text-sm font-semibold text-slate-500 whitespace-nowrap">Cash Book</button>
         </div>
     </nav>
@@ -65,7 +67,6 @@
                                 </select>
                             </div>
 
-                            <!-- Advance Dropdown -->
                             <div id="advanceListContainer" class="hidden bg-green-50 p-3 rounded-lg border border-green-200">
                                 <label class="block text-sm font-bold text-green-700 mb-1 tracking-tight italic">Adjust Advance</label>
                                 <select id="advanceCustomerList" onchange="autoFillFromAdvance(this)" class="w-full px-4 py-2 rounded-lg border border-green-300 outline-none bg-white font-medium">
@@ -74,7 +75,6 @@
                                 <div id="advBalanceNote" class="text-[10px] mt-1 text-green-600 font-bold uppercase"></div>
                             </div>
 
-                            <!-- Pending Dropdown -->
                             <div id="pendingUdharContainer" class="hidden bg-blue-50 p-3 rounded-lg border border-blue-200">
                                 <label class="block text-sm font-bold text-blue-700 mb-1 tracking-tight italic">Settle Udhar</label>
                                 <select id="pendingCustomerList" onchange="autoFillFromUdhar(this)" class="w-full px-4 py-2 rounded-lg border border-blue-300 outline-none bg-white font-medium">
@@ -175,7 +175,36 @@
                 </div>
             </section>
 
-            <!-- SECTION 3: UDHAR LEDGER (Separate Tab) -->
+            <!-- SECTION 3: TODAY TRANSACTIONS -->
+            <section id="sectionToday" class="hidden space-y-4 col-span-1 md:col-span-2">
+                <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-indigo-500">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-calendar-check text-indigo-600"></i> Today's Transactions</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-indigo-50 text-indigo-900 border-b border-indigo-200">
+                                <tr>
+                                    <th class="py-3 px-2">Type</th>
+                                    <th class="py-3 px-2">Date</th>
+                                    <th class="py-3 px-2">Ref No.</th>
+                                    <th class="py-3 px-2">Particular</th>
+                                    <th class="py-3 px-2">Category</th>
+                                    <th class="py-3 px-2 text-right">Cash</th>
+                                    <th class="py-3 px-2 text-right">Bank</th>
+                                    <th class="py-3 px-2 text-right">Paytm</th>
+                                    <th class="py-3 px-2 text-right">Udhar</th>
+                                    <th class="py-3 px-2">Remarks</th>
+                                    <th class="py-3 px-2 text-right">Adv. Adj.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="todayListBody">
+                                <!-- Dynamic Data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: UDHAR LEDGER -->
             <section id="sectionUdhar" class="hidden space-y-4 col-span-1 md:col-span-2">
                 <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-blue-500">
                     <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-list-ul text-blue-600"></i> Pending Udhar Ledger</h2>
@@ -188,15 +217,13 @@
                                     <th class="py-3 px-2">History Summary</th>
                                 </tr>
                             </thead>
-                            <tbody id="udharListBody">
-                                <!-- Dynamic Data -->
-                            </tbody>
+                            <tbody id="udharListBody"></tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 4: ADVANCE LEDGER (Separate Tab) -->
+            <!-- SECTION 5: ADVANCE LEDGER -->
             <section id="sectionAdvance" class="hidden space-y-4 col-span-1 md:col-span-2">
                 <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-green-500">
                     <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-receipt text-green-600"></i> Customer Advance Ledger</h2>
@@ -209,15 +236,13 @@
                                     <th class="py-3 px-2">Adjustment History</th>
                                 </tr>
                             </thead>
-                            <tbody id="advanceListBody">
-                                <!-- Dynamic Data -->
-                            </tbody>
+                            <tbody id="advanceListBody"></tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 5: CASH BOOK -->
+            <!-- SECTION 6: CASH BOOK -->
             <section id="sectionCashBook" class="hidden space-y-4 col-span-1 md:col-span-2">
                 <div class="glass-card rounded-2xl p-6 shadow-sm border-t-4 border-t-orange-500">
                     <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-book text-orange-600"></i> Cash In Hand Report</h2>
@@ -232,9 +257,7 @@
                                     <th class="py-3 px-2 text-right font-bold">Closing</th>
                                 </tr>
                             </thead>
-                            <tbody id="cashBookBody">
-                                <!-- Dynamic Data -->
-                            </tbody>
+                            <tbody id="cashBookBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -244,13 +267,12 @@
 
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMWH-cpfw94dnQdP9zTWRN_5gKapcOtNo1vVqmi4_PLxpvx6aodNmjY7ZXyInAt0ISuQ/exec';
-        let udharData = [], advanceData = [], cashData = [];
+        let udharData = [], advanceData = [], cashData = [], todayData = [];
 
         function switchTab(type) {
-            const sections = ['sectionReceived', 'sectionExpense', 'sectionUdhar', 'sectionAdvance', 'sectionCashBook'];
-            const btns = ['tabBtnReceived', 'tabBtnExpense', 'tabBtnUdhar', 'tabBtnAdvance', 'tabBtnCashBook'];
+            const sections = ['sectionReceived', 'sectionExpense', 'sectionToday', 'sectionUdhar', 'sectionAdvance', 'sectionCashBook'];
+            const btns = ['tabBtnReceived', 'tabBtnExpense', 'tabBtnToday', 'tabBtnUdhar', 'tabBtnAdvance', 'tabBtnCashBook'];
             
-            // Hide all sections and reset tabs
             sections.forEach(s => document.getElementById(s).classList.add('hidden'));
             btns.forEach(b => {
                 const btn = document.getElementById(b);
@@ -258,47 +280,43 @@
                 btn.classList.add('text-slate-500');
             });
 
-            // Show active section and highlight tab
-            if(type === 'received') {
-                document.getElementById('sectionReceived').classList.remove('hidden');
-                document.getElementById('tabBtnReceived').classList.add('tab-active');
-                document.getElementById('tabBtnReceived').classList.remove('text-slate-500');
-            } else if(type === 'expense') {
-                document.getElementById('sectionExpense').classList.remove('hidden');
-                document.getElementById('tabBtnExpense').classList.add('tab-active');
-                document.getElementById('tabBtnExpense').classList.remove('text-slate-500');
-            } else if(type === 'udhar') {
-                document.getElementById('sectionUdhar').classList.remove('hidden');
-                document.getElementById('tabBtnUdhar').classList.add('tab-active');
-                document.getElementById('tabBtnUdhar').classList.remove('text-slate-500');
-                fetchAllData();
-            } else if(type === 'advance') {
-                document.getElementById('sectionAdvance').classList.remove('hidden');
-                document.getElementById('tabBtnAdvance').classList.add('tab-active');
-                document.getElementById('tabBtnAdvance').classList.remove('text-slate-500');
-                fetchAllData();
-            } else if(type === 'cashbook') {
-                document.getElementById('sectionCashBook').classList.remove('hidden');
-                document.getElementById('tabBtnCashBook').classList.add('tab-active');
-                document.getElementById('tabBtnCashBook').classList.remove('text-slate-500');
-                fetchAllData();
-            }
+            const activeBtn = type === 'received' ? 'tabBtnReceived' : 
+                              type === 'expense' ? 'tabBtnExpense' :
+                              type === 'today' ? 'tabBtnToday' :
+                              type === 'udhar' ? 'tabBtnUdhar' :
+                              type === 'advance' ? 'tabBtnAdvance' : 'tabBtnCashBook';
+            
+            const activeSec = type === 'received' ? 'sectionReceived' :
+                              type === 'expense' ? 'sectionExpense' :
+                              type === 'today' ? 'sectionToday' :
+                              type === 'udhar' ? 'sectionUdhar' :
+                              type === 'advance' ? 'sectionAdvance' : 'sectionCashBook';
+
+            document.getElementById(activeSec).classList.remove('hidden');
+            document.getElementById(activeBtn).classList.add('tab-active');
+            document.getElementById(activeBtn).classList.remove('text-slate-500');
+
+            if(type !== 'received' && type !== 'expense') fetchAllData();
         }
 
         async function fetchAllData() {
             const syncIcon = document.getElementById('syncIcon');
             syncIcon.classList.add('fa-spin');
             try {
-                const [uRes, aRes, cRes] = await Promise.all([
+                const [uRes, aRes, cRes, tRes] = await Promise.all([
                     fetch(`${SCRIPT_URL}?action=getUdharList&t=${Date.now()}`),
                     fetch(`${SCRIPT_URL}?action=getAdvanceList&t=${Date.now()}`),
-                    fetch(`${SCRIPT_URL}?action=getCashReport&t=${Date.now()}`)
+                    fetch(`${SCRIPT_URL}?action=getCashReport&t=${Date.now()}`),
+                    fetch(`${SCRIPT_URL}?action=getTodayTransactions&t=${Date.now()}`)
                 ]);
                 udharData = await uRes.json();
                 advanceData = await aRes.json();
                 cashData = await cRes.json();
+                todayData = await tRes.json();
+                
                 renderLists();
                 renderCashBook();
+                renderTodayTransactions();
             } catch (e) { console.error(e); }
             syncIcon.classList.remove('fa-spin');
         }
@@ -333,6 +351,25 @@
                     <td class="py-3 px-2 text-right font-bold text-slate-800 bg-orange-50/30">₹${d.closing.toLocaleString()}</td>
                 </tr>
             `).join('') || '<tr><td colspan="5" class="py-4 text-center text-slate-400">No Cash History</td></tr>';
+        }
+
+        function renderTodayTransactions() {
+            const tbody = document.getElementById('todayListBody');
+            tbody.innerHTML = todayData.map(t => `
+                <tr class="border-b hover:bg-indigo-50/30">
+                    <td class="py-3 px-2"><span class="px-2 py-1 text-[10px] font-bold rounded-full ${t.type === 'Received' ? 'bg-green-100 text-green-800' : 'bg-rose-100 text-rose-800'}">${t.type}</span></td>
+                    <td class="py-3 px-2 whitespace-nowrap">${t.date}</td>
+                    <td class="py-3 px-2 text-xs text-slate-500">${t.ref || '-'}</td>
+                    <td class="py-3 px-2 font-medium">${t.particular}</td>
+                    <td class="py-3 px-2 text-xs">${t.category}</td>
+                    <td class="py-3 px-2 text-right font-mono text-green-600">${t.cash ? '₹'+t.cash : '-'}</td>
+                    <td class="py-3 px-2 text-right font-mono text-blue-600">${t.bank ? '₹'+t.bank : '-'}</td>
+                    <td class="py-3 px-2 text-right font-mono text-sky-500">${t.paytm ? '₹'+t.paytm : '-'}</td>
+                    <td class="py-3 px-2 text-right font-mono text-rose-500">${t.udhar ? '₹'+t.udhar : '-'}</td>
+                    <td class="py-3 px-2 text-xs italic text-slate-400 max-w-[150px] truncate" title="${t.remark}">${t.remark || '-'}</td>
+                    <td class="py-3 px-2 text-right font-mono text-amber-600">${t.advance ? '₹'+t.advance : '-'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="11" class="py-8 text-center text-slate-400 italic">No transactions found for today.</td></tr>';
         }
 
         function updateDropdowns() {
