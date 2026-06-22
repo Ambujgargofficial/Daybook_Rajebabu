@@ -32,6 +32,21 @@
         </div>
     </div>
 
+    <!-- CONFIRMATION MODAL -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[110] hidden flex-col items-center justify-center p-4 transition-opacity duration-200 opacity-0">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-transform duration-200 scale-95" id="confirmModalContent">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-question text-3xl"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Save Entry?</h2>
+            <p class="text-slate-500 mb-6 text-sm">Are you sure you want to save this transaction? Please confirm.</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">No, Cancel</button>
+                <button id="confirmSaveBtn" class="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-200">Yes, Save</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
@@ -121,8 +136,8 @@
                             <label class="block text-sm font-medium text-slate-700 mb-1">Remarks</label>
                             <textarea name="remarks" id="receivedRemarks" rows="2" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500" placeholder="Enter Remarks..."></textarea>
                         </div>
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg">Save Entry</button>
-                        <div id="loadingRec" class="hidden text-center text-sm text-slate-500">Saving...</div>
+                        <button type="submit" id="btnSubmitRec" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg">Save Entry</button>
+                        <div id="loadingRec" class="hidden text-center text-sm text-slate-500">Processing Entry... Please wait</div>
                     </form>
                 </div>
             </section>
@@ -161,8 +176,8 @@
                                 <input type="text" name="formHead" class="w-full px-4 py-2 rounded-lg border border-slate-200" placeholder="In-charge Name">
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl shadow-lg">Save Expense</button>
-                        <div id="loadingExp" class="hidden text-center text-sm text-slate-500">Saving...</div>
+                        <button type="submit" id="btnSubmitExp" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl shadow-lg">Save Expense</button>
+                        <div id="loadingExp" class="hidden text-center text-sm text-slate-500">Processing Entry... Please wait</div>
                     </form>
                 </div>
             </section>
@@ -256,6 +271,12 @@
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzY19NgFyBVGUoONdYGgPoJOgUQd1sshQYmzvLsfi7Ko5DQ5M0nzP7xwHLu1kpUrkY/exec';
         let udharData=[],advanceData=[],cashData=[],todayData=[];
+        
+        // Variables for pending submission state
+        let pendingSubmitData = null;
+        let isPendingRec = true;
+        let pendingFormElement = null;
+        let pendingSubmitBtn = null;
 
         document.getElementById('pinForm').addEventListener('submit',function(e){e.preventDefault();if(document.getElementById('pinInput').value==='0208'){document.getElementById('pinScreen').classList.add('hidden');document.body.classList.remove('overflow-hidden');fetchAllData();}else{document.getElementById('pinError').classList.remove('hidden');}});
 
@@ -338,12 +359,67 @@
             }
         }
 
-        async function submitForm(e,isRec){
+        // Prepare the submission but open modal first
+        function prepareSubmission(e, isRec) {
             e.preventDefault();
-            const loader=document.getElementById(isRec?'loadingRec':'loadingExp');
+            pendingFormElement = e.target;
+            pendingSubmitBtn = isRec ? document.getElementById('btnSubmitRec') : document.getElementById('btnSubmitExp');
+            isPendingRec = isRec;
+            
+            const fd = new FormData(e.target); 
+            pendingSubmitData = Object.fromEntries(fd.entries());
+
+            // Open Modal
+            const modal = document.getElementById('confirmModal');
+            const modalContent = document.getElementById('confirmModalContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Trigger animation
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            const modalContent = document.getElementById('confirmModalContent');
+            
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                pendingSubmitData = null;
+                pendingFormElement = null;
+                pendingSubmitBtn = null;
+            }, 200);
+        }
+
+        // Execute submission upon user confirmation
+        document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+            if (!pendingSubmitData || !pendingFormElement) return;
+
+            const data = pendingSubmitData;
+            const isRec = isPendingRec;
+            const form = pendingFormElement;
+            const btn = pendingSubmitBtn;
+
+            // Close Modal immediately
+            closeConfirmModal();
+
+            // Disable button to prevent double click
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            const originalBtnText = btn.innerText;
+            btn.innerText = "Saving...";
+
+            const loader = document.getElementById(isRec ? 'loadingRec' : 'loadingExp');
             loader.classList.remove('hidden');
-            const fd=new FormData(e.target); const data=Object.fromEntries(fd.entries());
-            data.timestamp=new Date().toLocaleString();
+            
+            data.timestamp = new Date().toLocaleString();
             if(isRec && !data.refNo) data.refNo = data.challanNo;
 
             // Auto-append amount & date to remarks for tracking history in the remark field itself
@@ -363,12 +439,23 @@
 
             try{
                 await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(data)});
-                alert("Saved!"); e.target.reset(); if(isRec)handleCategoryChange('Customer'); fetchAllData();
-            }catch(e){alert("Error");}
+                alert("Entry Saved Successfully!"); 
+                form.reset(); 
+                if(isRec) handleCategoryChange('Customer'); 
+                fetchAllData();
+            }catch(e){
+                alert("Error saving. Please try again.");
+            }
+            
+            // Re-enable everything
             loader.classList.add('hidden');
-        }
-        document.getElementById('formReceived').onsubmit=e=>submitForm(e,true);
-        document.getElementById('formExpense').onsubmit=e=>submitForm(e,false);
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.innerText = originalBtnText;
+        });
+
+        document.getElementById('formReceived').onsubmit = e => prepareSubmission(e, true);
+        document.getElementById('formExpense').onsubmit = e => prepareSubmission(e, false);
     </script>
 </body>
 </html>
